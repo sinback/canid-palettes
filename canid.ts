@@ -89,6 +89,8 @@ function lmsToXyz(l: number, m: number, s: number): [number, number, number] {
   ];
 }
 
+// ── Vision simulators ─────────────────────────────────────────────────────────
+
 /**
  * Simulate canid dichromacy.
  *
@@ -115,12 +117,66 @@ export function simulateCanid(
   return xyzToRgb(nx, ny, nz);
 }
 
-export function translateHex(hex: string): { original: string; canid: string } {
+/**
+ * Simulate rat monochromacy (M-cone only, ignoring UV S-cones).
+ *
+ * Rats have an M-cone peaking at ~530nm (similar to the HPE M-cone basis).
+ * Ignoring UV S-cones, they are effectively monochromats — every color
+ * reduces to a single brightness dimension.
+ *
+ * We normalize the M-cone activation against D65 white so the full input
+ * range maps faithfully to the full output range. The result is displayed
+ * as a green-tinted grayscale: black → (0,0,0), white → (0,255,0).
+ *
+ * Note: routing through lmsToXyz(0, m, 0) is incorrect — pure M-cone
+ * stimulation is outside the sRGB gamut (requires negative X in XYZ), so
+ * the round-trip produces a ×2.29 scale factor that clips at ~43% brightness,
+ * erasing distinctions between mid-bright and bright colors.
+ */
+
+// M-cone activation for D65 white — used to normalize rat output
+const M_WHITE = (() => {
+  const [x, y, z] = rgbToXyz(255, 255, 255);
+  return xyzToLms(x, y, z)[1];
+})();
+
+export function simulateRat(
+  r: number,
+  g: number,
+  b: number
+): [number, number, number] {
+  const [x, y, z] = rgbToXyz(r, g, b);
+  const [, m] = xyzToLms(x, y, z);
+
+  // Normalize to [0, 1] relative to white, then encode as linear green
+  const mNorm = Math.max(0, Math.min(1, m / M_WHITE));
+  return [0, delinearize(mNorm), 0];
+}
+
+// ── Mode registry ─────────────────────────────────────────────────────────────
+
+export type Mode = "canid" | "rat";
+
+const MODES: Record<Mode, {
+  label: string;
+  simulate: (r: number, g: number, b: number) => [number, number, number];
+}> = {
+  canid: { label: "canid",  simulate: simulateCanid },
+  rat:   { label: "rat",    simulate: simulateRat   },
+};
+
+function isMode(s: string): s is Mode {
+  return s in MODES;
+}
+
+// ── translateHex ──────────────────────────────────────────────────────────────
+
+export function translateHex(hex: string, mode: Mode = "canid"): { original: string; simulated: string } {
   const [r, g, b] = hexToRgb(hex);
-  const [cr, cg, cb] = simulateCanid(r, g, b);
+  const [sr, sg, sb] = MODES[mode].simulate(r, g, b);
   return {
     original: rgbToHex(r, g, b),
-    canid: rgbToHex(cr, cg, cb),
+    simulated: rgbToHex(sr, sg, sb),
   };
 }
 
@@ -135,10 +191,10 @@ function colorBlock(hex: string): string {
   return `\x1b[48;2;${r};${g};${b}m  ${RESET}`;
 }
 
-function printPair(original: string, canid: string, label?: string): void {
+function printPair(original: string, simulated: string, label?: string): void {
   const tag = label ? ` ${DIM}${label}${RESET}` : "";
   console.log(
-    `  ${colorBlock(original)} ${BOLD}${original}${RESET}  →  ${colorBlock(canid)} ${BOLD}${canid}${RESET}${tag}`
+    `  ${colorBlock(original)} ${BOLD}${original}${RESET}  →  ${colorBlock(simulated)} ${BOLD}${simulated}${RESET}${tag}`
   );
 }
 
@@ -150,36 +206,35 @@ function toCoolorsUrl(hexes: string[]): string {
 
 interface CsvRow {
   original_hex: string;
-  canid_hex: string;
+  simulated_hex: string;
   orig_r: number;
   orig_g: number;
   orig_b: number;
-  canid_r: number;
-  canid_g: number;
-  canid_b: number;
-  label?: string;
+  sim_r: number;
+  sim_g: number;
+  sim_b: number;
 }
 
-function processColors(hexes: string[]): CsvRow[] {
+function processColors(hexes: string[], mode: Mode): CsvRow[] {
   return hexes.map((hex) => {
     const clean = hex.replace(/^#/, "");
     const [r, g, b] = hexToRgb(clean);
-    const [cr, cg, cb] = simulateCanid(r, g, b);
+    const [sr, sg, sb] = MODES[mode].simulate(r, g, b);
     return {
       original_hex: rgbToHex(r, g, b),
-      canid_hex: rgbToHex(cr, cg, cb),
+      simulated_hex: rgbToHex(sr, sg, sb),
       orig_r: r, orig_g: g, orig_b: b,
-      canid_r: cr, canid_g: cg, canid_b: cb,
+      sim_r: sr, sim_g: sg, sim_b: sb,
     };
   });
 }
 
-function writeCsv(rows: CsvRow[], outPath: string): void {
-  const header = "original_hex,canid_hex,orig_r,orig_g,orig_b,canid_r,canid_g,canid_b";
+function writeCsv(rows: CsvRow[], outPath: string, mode: Mode): void {
+  const header = `original_hex,${mode}_hex,orig_r,orig_g,orig_b,${mode}_r,${mode}_g,${mode}_b`;
   const lines = rows.map((row) =>
-    [row.original_hex, row.canid_hex,
+    [row.original_hex, row.simulated_hex,
      row.orig_r, row.orig_g, row.orig_b,
-     row.canid_r, row.canid_g, row.canid_b].join(",")
+     row.sim_r, row.sim_g, row.sim_b].join(",")
   );
   fs.writeFileSync(outPath, [header, ...lines].join("\n") + "\n");
 }
@@ -202,19 +257,38 @@ function readCsvHexes(csvPath: string): string[] {
 
 // ── Interactive REPL ──────────────────────────────────────────────────────────
 
-async function interactiveMode(): Promise<void> {
-  console.log(`\n  ${BOLD}Canid Vision Translator${RESET}`);
-  console.log(`  ${DIM}Enter hex codes one at a time. Type 'coolors' to get a URL, 'quit' to exit.${RESET}\n`);
+async function interactiveMode(initialMode: Mode): Promise<void> {
+  let mode = initialMode;
+
+  const modeNames = Object.keys(MODES).join(", ");
+
+  console.log(`\n  ${BOLD}Animal Vision Translator${RESET}`);
+  console.log(`  ${DIM}Mode: ${mode}. Commands: 'mode <name>', 'coolors', 'clear', 'quit'.${RESET}`);
+  console.log(`  ${DIM}Available modes: ${modeNames}${RESET}\n`);
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   const history: string[] = [];
 
   const ask = (): void => {
-    rl.question("  hex> ", (input) => {
-      const cmd = input.trim().toLowerCase();
+    rl.question(`  [${mode}] hex> `, (input) => {
+      const raw = input.trim();
+      const cmd = raw.toLowerCase();
 
       if (cmd === "quit" || cmd === "exit" || cmd === "q") {
         rl.close();
+        return;
+      }
+
+      if (cmd.startsWith("mode ")) {
+        const next = cmd.slice(5).trim();
+        if (isMode(next)) {
+          mode = next;
+          history.length = 0;
+          console.log(`  ${DIM}Switched to ${mode} mode. History cleared.${RESET}\n`);
+        } else {
+          console.log(`  ${DIM}Unknown mode '${next}'. Available: ${modeNames}${RESET}\n`);
+        }
+        ask();
         return;
       }
 
@@ -223,8 +297,8 @@ async function interactiveMode(): Promise<void> {
           console.log(`  ${DIM}No colors yet.${RESET}\n`);
         } else {
           const allHexes = history.flatMap((h) => {
-            const { original, canid } = translateHex(h);
-            return [original, canid];
+            const { original, simulated } = translateHex(h, mode);
+            return [original, simulated];
           });
           console.log(`\n  ${toCoolorsUrl(allHexes)}\n`);
         }
@@ -240,9 +314,9 @@ async function interactiveMode(): Promise<void> {
       }
 
       try {
-        const { original, canid } = translateHex(cmd);
+        const { original, simulated } = translateHex(raw, mode);
         history.push(original);
-        printPair(original, canid);
+        printPair(original, simulated);
         console.log();
       } catch (e) {
         console.log(`  ${DIM}${(e as Error).message}${RESET}\n`);
@@ -258,10 +332,23 @@ async function interactiveMode(): Promise<void> {
 // ── CLI entry point ───────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
-  const args = process.argv.slice(2);
+  let args = process.argv.slice(2);
+
+  // Parse --mode <mode> anywhere before other flags
+  let mode: Mode = "canid";
+  const modeIdx = args.indexOf("--mode");
+  if (modeIdx !== -1) {
+    const val = args[modeIdx + 1];
+    if (!val || !isMode(val)) {
+      console.error(`Unknown mode '${val}'. Available: ${Object.keys(MODES).join(", ")}`);
+      process.exit(1);
+    }
+    mode = val;
+    args = [...args.slice(0, modeIdx), ...args.slice(modeIdx + 2)];
+  }
 
   if (args.length === 0) {
-    await interactiveMode();
+    await interactiveMode(mode);
     return;
   }
 
@@ -269,18 +356,18 @@ async function main(): Promise<void> {
   if (args[0] === "--csv") {
     const inPath = args[1];
     if (!inPath) {
-      console.error("Usage: canid.ts --csv <input.csv> [output.csv]");
+      console.error("Usage: canid.ts [--mode <mode>] --csv <input.csv> [output.csv]");
       process.exit(1);
     }
     const hexes = readCsvHexes(inPath);
-    const rows = processColors(hexes);
+    const rows = processColors(hexes, mode);
     const outPath = args[2] ?? path.join(
       path.dirname(inPath),
-      path.basename(inPath, ".csv") + "-canid.csv"
+      path.basename(inPath, ".csv") + `-${mode}.csv`
     );
-    writeCsv(rows, outPath);
-    console.log(`\n  Translated ${rows.length} colors → ${outPath}\n`);
-    rows.forEach((row) => printPair(row.original_hex, row.canid_hex));
+    writeCsv(rows, outPath, mode);
+    console.log(`\n  Translated ${rows.length} colors (${mode}) → ${outPath}\n`);
+    rows.forEach((row) => printPair(row.original_hex, row.simulated_hex));
     console.log();
     return;
   }
@@ -289,23 +376,23 @@ async function main(): Promise<void> {
   if (args[0] === "--coolors") {
     const hexes = args.slice(1);
     if (hexes.length === 0) {
-      console.error("Usage: canid.ts --coolors #hex1 #hex2 ...");
+      console.error("Usage: canid.ts [--mode <mode>] --coolors #hex1 #hex2 ...");
       process.exit(1);
     }
-    const rows = processColors(hexes);
-    rows.forEach((row) => printPair(row.original_hex, row.canid_hex));
-    const allHexes = rows.flatMap((r) => [r.original_hex, r.canid_hex]);
+    const rows = processColors(hexes, mode);
+    rows.forEach((row) => printPair(row.original_hex, row.simulated_hex));
+    const allHexes = rows.flatMap((r) => [r.original_hex, r.simulated_hex]);
     console.log(`\n  ${toCoolorsUrl(allHexes)}\n`);
     return;
   }
 
-  // Plain hex args: canid.ts #e8b840 #d4931f ...
-  console.log(`\n  ${BOLD}Canid Vision Translator${RESET}\n`);
-  const rows = processColors(args);
-  rows.forEach((row) => printPair(row.original_hex, row.canid_hex));
+  // Plain hex args: canid.ts [--mode <mode>] #e8b840 #d4931f ...
+  console.log(`\n  ${BOLD}Animal Vision Translator${RESET} ${DIM}(${mode})${RESET}\n`);
+  const rows = processColors(args, mode);
+  rows.forEach((row) => printPair(row.original_hex, row.simulated_hex));
 
   if (rows.length > 1) {
-    const allHexes = rows.flatMap((r) => [r.original_hex, r.canid_hex]);
+    const allHexes = rows.flatMap((r) => [r.original_hex, r.simulated_hex]);
     console.log(`\n  coolors: ${DIM}${toCoolorsUrl(allHexes)}${RESET}`);
   }
   console.log();
