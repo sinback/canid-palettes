@@ -1,0 +1,13 @@
+{
+  "name": "canid-vision",
+  "version": "1.0.0",
+  "description": "Translate hex colors to canid dichromatic vision equivalents",
+  "scripts": {
+    "start": "npx ts-node canid.ts",
+    "translate": "npx ts-node canid.ts"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}
