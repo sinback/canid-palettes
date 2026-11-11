@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>canid-palettes</title>
+<meta name="description" content="Translate hex colors to what a dog, wolf, coyote or fox would see: a REPL for canid (dichromatic) color vision.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%90%BA%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --page-bg: #f4f1ea;
+    --page-fg: #2b2a26;
+    --page-dim: #6b685f;
+    --page-link: #7a4b00;
+    --chip-bg: #fffdf8;
+    --chip-border: #cfc9ba;
+    --term-bg: #1c1b17;
+    --term-fg: #e8e4d8;
+    --term-dim: #8f8b7e;
+    --term-accent: #e8b840;
+    --term-border: #3a382f;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page-bg: #12110e;
+      --page-fg: #e8e4d8;
+      --page-dim: #9a968a;
+      --page-link: #e8b840;
+      --chip-bg: #1c1b17;
+      --chip-border: #3a382f;
+      --term-bg: #0b0b09;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--page-bg);
+    color: var(--page-fg);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main {
+    max-width: 52rem;
+    margin: 0 auto;
+    padding: 1.5rem 16px 3rem;
+  }
+  h1 { margin: 0 0 .25rem; font-size: 1.6rem; }
+  .tagline { margin: 0 0 1.25rem; color: var(--page-dim); }
+  a { color: var(--page-link); }
+
+  /* ── Terminal ── */
+  .terminal {
+    background: var(--term-bg);
+    color: var(--term-fg);
+    border: 1px solid var(--term-border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font: 14px/1.55 var(--mono);
+    height: 26rem;
+    max-height: 70vh;
+    overflow-y: auto;
+    cursor: text;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, .25);
+  }
+  .terminal:focus-within { border-color: var(--term-accent); }
+  .terminal a { color: var(--term-accent); word-break: break-all; }
+
+  .line { white-space: pre-wrap; word-break: break-word; min-height: 1.55em; }
+  .line.blank { min-height: .6em; }
+  .line.title { font-weight: 700; }
+  .line.note { color: var(--term-dim); }
+  .line.echo .prompt-text { color: var(--term-accent); white-space: pre; }
+  .line.pair b { font-weight: 700; }
+
+  .swatch {
+    display: inline-block;
+    width: 1.6em;
+    height: 1em;
+    vertical-align: -.12em;
+    border-radius: 2px;
+    border: 1px solid rgba(255, 255, 255, .35);
+  }
+
+  form { display: flex; align-items: baseline; gap: .6ch; margin: 0; }
+  #prompt { color: var(--term-accent); white-space: pre; }
+  #input {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: 0;
+    outline: 0;
+    padding: 0;
+    color: inherit;
+    font: inherit;
+    caret-color: var(--term-accent);
+  }
+
+  /* ── Examples ── */
+  .examples { margin: 1rem 0 0; display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+  .examples span { color: var(--page-dim); font-size: .9rem; }
+  .examples button {
+    font: 13px var(--mono);
+    color: var(--page-fg);
+    background: var(--chip-bg);
+    border: 1px solid var(--chip-border);
+    border-radius: 999px;
+    padding: .35rem .8rem;
+    cursor: pointer;
+  }
+  .examples button:hover, .examples button:focus-visible { border-color: var(--page-link); }
+
+  /* ── Notes ── */
+  .notes { margin-top: 2rem; color: var(--page-dim); font-size: .95rem; }
+  .notes h2 { color: var(--page-fg); font-size: 1.05rem; margin: 0 0 .5rem; }
+  .notes p { margin: 0 0 .75rem; }
+  code { font-family: var(--mono); font-size: .9em; }
+</style>
+</head>
+<body>
+<main>
+  <h1>🐺 canid-palettes</h1>
+  <p class="tagline">Translate hex colors to what a dog, wolf, coyote or fox would see.</p>
+
+  <section id="terminal" class="terminal" aria-label="Color vision REPL">
+    <div id="log" role="log" aria-live="polite"></div>
+    <form id="prompt-form" autocomplete="off">
+      <label id="prompt" for="input">[canid] hex&gt;</label>
+      <input id="input" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="go" aria-label="Enter a hex color or command">
+    </form>
+  </section>
+
+  <div class="examples" aria-label="Examples">
+    <span>Try:</span>
+    <button type="button" data-run="#e8b840">#e8b840</button>
+    <button type="button" data-run="e8b840 d4931f 5c3b0d 1c1b17">a palette</button>
+    <button type="button" data-run="coolors">coolors</button>
+    <button type="button" data-run="mode rat">mode rat</button>
+    <button type="button" data-run="help">help</button>
+  </div>
+
+  <section class="notes">
+    <h2>What am I looking at?</h2>
+    <p>
+      Dogs, wolves, coyotes and foxes are dichromats: they have two cone types
+      (about 430&nbsp;nm and 555&nbsp;nm) where humans have three. Each result row shows
+      your color on the left and an approximation of how a canid sees it on the right.
+    </p>
+    <p>
+      The simulation uses Hunt-Pointer-Estevez LMS matrices and collapses the human L and M
+      cones into one canid L response. It is a principled approximation, not a measured
+      transform. <code>mode rat</code> is an experimental monochromat model.
+    </p>
+    <p>
+      This page is the same REPL as the command-line tool.
+      <a href="https://github.com/sinback/canid-palettes">Source and CLI on GitHub</a>.
+    </p>
+  </section>
+</main>
+<script src="web.js"></script>
+</body>
+</html>
