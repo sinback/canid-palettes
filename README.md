@@ -1,5 +1,4 @@
-# canid-vision
-
+# canid-palettes
 Translate hex colors to their canid (dichromatic — S-cone + L/M cone) equivalents — what a dog, wolf, coyote, fox, etc. would see.
 
 ## Setup
