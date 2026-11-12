@@ -151,7 +151,26 @@
     <p>
       The simulation uses Hunt-Pointer-Estevez LMS matrices and collapses the human L and M
       cones into one canid L response. It is a principled approximation, not a measured
-      transform. <code>mode rat</code> is an experimental monochromat model.
+      transform. Type <code>help</code> to list the commands, or use the mode button above the text to switch models.
+    </p>
+
+    <h2 id="about-modes">The modes</h2>
+    <p>
+      <strong><code>mode canid</code></strong> (default). Canids have two cone types, so this
+      model keeps two color channels, roughly blue and yellow. Reds, oranges and greens shift
+      toward the same yellowish-olive range, while blues stay distinguishable from yellows.
+    </p>
+    <p>
+      <strong><code>mode rat</code></strong> (experimental). This model keeps a single channel:
+      the rat’s green-sensitive cone. With one cone type there is no hue information, only
+      brightness, so every color reduces to one brightness level. (Rats also have a UV-sensitive
+      cone, but a screen cannot display UV, so it is not modeled.)
+    </p>
+    <p>
+      Why green rather than gray? The output is drawn in green only because that is the cone being
+      modeled; it is a way to display one channel, not a hue the rat perceives. Black stays black,
+      white becomes full green (<code>#00ff00</code>), and the brighter a color looks to that cone,
+      the brighter its green. Different colors of similar brightness come out the same.
     </p>
     <p>
       This page is the same REPL as the command-line tool.
