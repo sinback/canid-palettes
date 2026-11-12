@@ -9,11 +9,16 @@ npm install
 
 ## Try it in the browser
 
-The same REPL runs as a static page (deployed to GitHub Pages from `main`):
+The same REPL runs as a web page. The latest passing build of `main` is hosted at
+**https://sinback.github.io/canid-palettes**.
+
+## Run the web page locally
 
 ```bash
-npm run serve      # builds the page into _site/ and serves it on http://localhost:4173
+npm run serve
 ```
+
+This builds the page into `_site/` and serves it at http://localhost:4173.
 
 ## Usage
 
