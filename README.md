@@ -7,13 +7,27 @@ Translate hex colors to their canid (dichromatic — S-cone + L/M cone) equivale
 npm install
 ```
 
+## Try it in the browser
+
+The same REPL runs as a web page. The latest passing build of `main` is hosted at
+**https://sinback.github.io/canid-palettes**.
+
+## Run the web page locally
+
+```bash
+npm run serve
+```
+
+This builds the page into `_site/` and serves it at http://localhost:4173.
+
 ## Usage
 
 **Interactive REPL** (no args):
 ```bash
 npx ts-node canid.ts
 ```
-Type hex codes one at a time. `coolors` prints a coolors.co URL of everything entered. `quit` exits.
+Type hex codes (one or several per line). Commands: `mode <name>` (`canid`, `rat`), `coolors` prints a
+coolors.co URL of everything entered, `clear`, `help`, and `quit`.
 
 **Translate specific colors:**
 ```bash
@@ -38,13 +52,37 @@ Simulation uses Hunt-Pointer-Estevez LMS matrices. Canid cone peaks: ~430nm (S) 
 The L-cone weight split (35% human-L / 65% human-M) reflects the ~555nm peak sitting closer
 to human M (530nm) than human L (560nm). This is a principled approximation, not a measured transform.
 
+## Project layout
+
+| File | Role |
+|---|---|
+| `colorimetry.ts` | Species-agnostic color conversions (hex, sRGB, XYZ, LMS) |
+| `visual-systems.ts` | Vision models (`canid`, `rat`) and `translateHex` |
+| `repl.ts` | REPL interpreter shared by the CLI and the web page; returns structured output |
+| `canid.ts` | CLI front-end (arguments, CSV, readline, ANSI rendering) |
+| `web.ts`, `index.html` | Browser front-end; `npm run build:web` bundles them into `_site/` |
+| `tests/` | Playwright tests, including CLI/web parity checks |
+
+## Tests
+
+```bash
+npx playwright install chromium   # first time only
+npm test
+```
+
+## Deploying
+
+`.github/workflows/pages.yml` typechecks and runs the Playwright suite on every push and pull request,
+and deploys `_site/` to GitHub Pages from `main`. In the repository settings, Pages → Source must be
+set to **GitHub Actions**.
+
 ## Importing as a module
 
 ```typescript
-import { translateHex, simulateCanid } from "./canid";
+import { translateHex, simulateCanid } from "./visual-systems";
 
-const { original, canid } = translateHex("#e8b840");
-// { original: '#e8b840', canid: '#c9a824' }
+const { original, simulated } = translateHex("#e8b840");
+// { original: '#e8b840', simulated: '#b3c943' }
 
 const [r, g, b] = simulateCanid(232, 184, 64);
 ```

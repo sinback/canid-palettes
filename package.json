@@ -4,9 +4,15 @@
   "description": "Translate hex colors to canid dichromatic vision equivalents",
   "scripts": {
     "start": "npx ts-node canid.ts",
-    "translate": "npx ts-node canid.ts"
+    "translate": "npx ts-node canid.ts",
+    "typecheck": "tsc --noEmit",
+    "build:web": "node scripts/build-web.mjs",
+    "serve": "npm run build:web && node scripts/serve.mjs",
+    "test": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "esbuild": "^0.28.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
   }
