@@ -186,6 +186,30 @@ test("example chips run in the REPL", async ({ page }) => {
   await expect(page.locator("#prompt")).toHaveText("[rat] hex>");
 });
 
+test("the mode chip offers another mode and flips back after it is used", async ({ page }) => {
+  const chip = page.locator("#mode-chip");
+  await expect(chip).toHaveText("mode rat");
+
+  await chip.click();
+  await expect(page.locator("#prompt")).toHaveText("[rat] hex>");
+  await expect(chip).toHaveText("mode canid");
+
+  await chip.click();
+  await expect(page.locator("#prompt")).toHaveText("[canid] hex>");
+  await expect(chip).toHaveText("mode rat");
+});
+
+test("the mode chip follows modes switched by typing, and stays put otherwise", async ({ page }) => {
+  const chip = page.locator("#mode-chip");
+  await enter(page, "mode rat");
+  await expect(chip).toHaveText("mode canid");
+  await enter(page, "e8b840");
+  await enter(page, "nonsense");
+  await expect(chip).toHaveText("mode canid");
+  await enter(page, "mode canid");
+  await expect(chip).toHaveText("mode rat");
+});
+
 test("clicking the terminal focuses the prompt", async ({ page }) => {
   await page.locator("h1").click();
   await expect(page.locator("#input")).not.toBeFocused();

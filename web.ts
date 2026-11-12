@@ -4,12 +4,14 @@
  */
 
 import { Line, ReplState, banner, execute, initialState, promptFor } from "./repl";
+import { Mode, pickOtherMode } from "./visual-systems";
 
 const term = document.getElementById("terminal") as HTMLElement;
 const log = document.getElementById("log") as HTMLElement;
 const form = document.getElementById("prompt-form") as HTMLFormElement;
 const promptEl = document.getElementById("prompt") as HTMLElement;
 const input = document.getElementById("input") as HTMLInputElement;
+const modeChip = document.getElementById("mode-chip") as HTMLButtonElement;
 
 let state: ReplState = initialState("canid");
 const inputHistory: string[] = [];
@@ -81,9 +83,26 @@ function echo(prompt: string, text: string): void {
   log.append(el);
 }
 
+let chipForMode: Mode | null = null;
+
+/**
+ * The mode chip suggests switching to a random mode other than the current one. It is
+ * re-rolled only when the mode changes, so its label doesn't flicker on every command.
+ */
+function updateModeChip(): void {
+  if (chipForMode === state.mode) return;
+  chipForMode = state.mode;
+  const next = pickOtherMode(state.mode);
+  modeChip.hidden = next === undefined;
+  if (next === undefined) return;
+  modeChip.dataset.run = `mode ${next}`;
+  modeChip.textContent = `mode ${next}`;
+}
+
 function updatePrompt(): void {
   promptEl.textContent = promptFor(state).trimEnd();
   term.dataset.mode = state.mode;
+  updateModeChip();
 }
 
 // ── Running a line ────────────────────────────────────────────────────────────
