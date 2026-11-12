@@ -3,8 +3,8 @@ import { enter } from "./helpers";
 
 test("the page explains what the coolors command links to", async ({ page }) => {
   await page.goto("/");
-  const section = page.locator(".notes", { has: page.locator("#about-coolors") });
-  await expect(page.locator("#about-coolors")).toHaveText("About the coolors command");
+  const section = page.locator(".notes", { has: page.locator("#about-the-coolors-command") });
+  await expect(page.locator("#about-the-coolors-command")).toHaveText("About the coolors command");
 
   const link = section.getByRole("link", { name: "Coolors" });
   await expect(link).toHaveAttribute("href", "https://coolors.co");
@@ -22,5 +22,5 @@ test("the explanation is consistent with the URL the command actually builds", a
   await enter(page, "coolors");
   // original, simulated, ... as the page text says
   await expect(page.locator("#log .line.link a")).toHaveText("https://coolors.co/e8b840-b3c943");
-  await expect(page.locator("#about-coolors + p")).toContainText("original, simulated");
+  await expect(page.locator("#about-the-coolors-command + p")).toContainText("original, simulated");
 });
