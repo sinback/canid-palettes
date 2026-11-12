@@ -46,22 +46,50 @@ npx ts-node canid.ts --csv palette.csv
 npx ts-node canid.ts --csv palette.csv out/translated.csv
 ```
 
-## Notes
+## How the simulation works
 
-Simulation uses Hunt-Pointer-Estevez LMS matrices. Canid cone peaks: ~430nm (S) and ~555nm (L).
-The L-cone weight split (35% human-L / 65% human-M) reflects the ~555nm peak sitting closer
-to human M (530nm) than human L (560nm). This is a principled approximation, not a measured transform.
+1. **Cone curves from peak wavelengths.** Each cone type is described by the wavelength it responds
+   to best: about 429 nm (S) and 555 nm (L) for canids. Visual pigments all share nearly the same
+   sensitivity curve shape, just slid along the wavelength axis, so a standard published template
+   turns a peak into a full curve.
+2. **A hex color becomes light.** The screen's red, green and blue each emit a known spread of
+   wavelengths. A hex color says how much of each to switch on, which gives the spectrum leaving
+   the screen.
+3. **Cone catches.** Multiply that spectrum by a cone's curve, wavelength by wavelength, and add up.
+   The total is how strongly the cone responds. A canid gets two numbers per color.
+4. **Back to a color you can look at.** A canid's color world has two dimensions and ours has three,
+   so the output uses only mixes of the screen's yellow and blue (a family that includes every gray).
+   For each input, the output is the yellow/blue mix that gives a canid's cones the same two catches.
+   To a canid the two swatches match; to you, the output has lost exactly the differences a canid
+   cannot see.
+
+`mode rat` uses the same steps with a single cone peaking near 509 nm, shown as a green-tinted
+grayscale. Rats also have an ultraviolet cone (about 359 nm), which is left out because a screen
+emits almost no light it can catch.
+
+### What this is not
+
+- **A hex color does not say which screen it is on.** The model assumes a typical modern screen
+  showing sRGB. Swapping in measured spectra from other screens moves results by a hex step or two.
+- **Step 4 is a convention.** The cone catches come from physics; which human colors stand in for
+  them is a choice. Nobody knows what yellow feels like to a dog.
+- **Only cone pigments are modelled.** Rods, the lens, and everything the brain does afterwards
+  are not.
+- **Turn off Night Shift, f.lux and similar** for the intended preview: they tint the whole screen,
+  both swatches included.
 
 ## Project layout
 
 | File | Role |
 |---|---|
-| `colorimetry.ts` | Species-agnostic color conversions (hex, sRGB, XYZ, LMS) |
+| `colorimetry.ts` | Species-agnostic color conversions (hex, sRGB, linear RGB, XYZ) |
+| `spectra.ts` | Pigment sensitivity curves, the screen's emission spectra, and cone catches |
+| `cie1931.ts` | CIE 1931 colour-matching functions (data table) |
 | `visual-systems.ts` | Vision models (`canid`, `rat`) and `translateHex` |
 | `repl.ts` | REPL interpreter shared by the CLI and the web page; returns structured output |
 | `canid.ts` | CLI front-end (arguments, CSV, readline, ANSI rendering) |
 | `web.ts`, `index.html` | Browser front-end; `npm run build:web` bundles them into `_site/` |
-| `tests/` | Playwright tests, including CLI/web parity checks |
+| `tests/` | Playwright tests: the math (`colorimetry.spec.ts`), the REPL, and CLI/web parity |
 
 ## Tests
 
@@ -82,7 +110,7 @@ set to **GitHub Actions**.
 import { translateHex, simulateCanid } from "./visual-systems";
 
 const { original, simulated } = translateHex("#e8b840");
-// { original: '#e8b840', simulated: '#b3c943' }
+// { original: '#e8b840', simulated: '#c4c43f' }
 
 const [r, g, b] = simulateCanid(232, 184, 64);
 ```

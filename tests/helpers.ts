@@ -25,19 +25,19 @@ export async function lastPair(page: Page): Promise<[string, string]> {
 }
 
 /**
- * Golden values produced by the original single-file canid.ts before it was split
- * into colorimetry / visual-systems / repl. They guard against any change in the math.
+ * Golden values from the spectral model in spectra.ts / visual-systems.ts. They guard
+ * against accidental changes in the math; tests/colorimetry.spec.ts checks the math itself.
  */
 export const GOLDEN_CANID: [string, string][] = [
-  ["#e8b840", "#b3c943"],
-  ["#d4931f", "#95a91f"],
-  ["#5c3b0d", "#3d460d"],
-  ["#1c1b17", "#1b1b19"],
-  ["#aabbcc", "#bdb4d5"],
+  ["#e8b840", "#c4c43f"],
+  ["#d4931f", "#a4a41c"],
+  ["#5c3b0d", "#44440c"],
+  ["#1c1b17", "#1b1b17"],
+  ["#aabbcc", "#b7b7cc"],
 ];
 
 export const GOLDEN_RAT: [string, string][] = [
-  ["#e8b840", "#00ba00"],
+  ["#e8b840", "#00a100"],
   ["#ffffff", "#00ff00"],
   ["#000000", "#000000"],
 ];
