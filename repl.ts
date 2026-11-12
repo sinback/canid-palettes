@@ -8,7 +8,7 @@
  * Pure functions only: no Node or DOM APIs.
  */
 
-import { Mode, MODE_NAMES, isMode, translateHex } from "./visual-systems";
+import { Mode, MODES, MODE_NAMES, isMode, translateHex } from "./visual-systems";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -100,7 +100,11 @@ export function execute(state: ReplState, input: string): ExecResult {
     }
     if (isMode(next)) {
       return done(
-        [{ t: "note", text: `Switched to ${next} mode. History cleared.` }, BLANK],
+        [
+          { t: "note", text: `Switched to ${next} mode. History cleared.` },
+          { t: "note", text: MODES[next].description },
+          BLANK,
+        ],
         { mode: next, history: [] }
       );
     }

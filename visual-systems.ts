@@ -83,10 +83,22 @@ export type Mode = "canid" | "rat";
 
 export const MODES: Record<Mode, {
   label: string;
+  /** One or two plain-English sentences, shown when the user switches to this mode. */
+  description: string;
   simulate: (r: number, g: number, b: number) => Rgb;
 }> = {
-  canid: { label: "canid", simulate: simulateCanid },
-  rat:   { label: "rat",   simulate: simulateRat   },
+  canid: {
+    label: "canid",
+    description:
+      "Canids have two cone types, so reds, oranges and greens blur toward yellow-olive while blues stay distinct from yellows.",
+    simulate: simulateCanid,
+  },
+  rat: {
+    label: "rat",
+    description:
+      "Only one color channel is modeled, so every color becomes a brightness level, drawn here as green: black stays black and white becomes full green.",
+    simulate: simulateRat,
+  },
 };
 
 export const MODE_NAMES = Object.keys(MODES) as Mode[];
