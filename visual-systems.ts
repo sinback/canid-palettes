@@ -107,6 +107,32 @@ export function isMode(s: string): s is Mode {
   return Object.prototype.hasOwnProperty.call(MODES, s);
 }
 
+/**
+ * Pick one item from `all` other than `current`. Returns undefined when there is nothing else
+ * to pick.
+ *
+ * `rand` is the source of randomness: a function returning a number in [0, 1). It defaults to
+ * Math.random; tests pass their own deterministic function instead.
+ *
+ * @throws RangeError if `rand` returns a value outside [0, 1) (including NaN), since that would
+ * index outside the candidates.
+ */
+export function pickOther<T>(all: readonly T[], current: T, rand: () => number = Math.random): T | undefined {
+  const others = all.filter((x) => x !== current);
+  if (others.length === 0) return undefined;
+
+  const r = rand();
+  if (!(r >= 0 && r < 1)) {
+    throw new RangeError(`rand must return a number in [0, 1), but returned ${r}`);
+  }
+  return others[Math.floor(r * others.length)];
+}
+
+/** A random mode other than `current`, e.g. to suggest as the next mode to try. */
+export function pickOtherMode(current: Mode, rand: () => number = Math.random): Mode | undefined {
+  return pickOther(MODE_NAMES, current, rand);
+}
+
 // ── translateHex ──────────────────────────────────────────────────────────────
 
 export function translateHex(
