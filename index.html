@@ -114,6 +114,7 @@
   /* ── Notes ── */
   .notes { margin-top: 2rem; color: var(--page-dim); font-size: .95rem; }
   .notes h2 { color: var(--page-fg); font-size: 1.05rem; margin: 0 0 .5rem; }
+  .notes h2:not(:first-child) { margin-top: 1.5rem; }
   .notes p { margin: 0 0 .75rem; }
   code { font-family: var(--mono); font-size: .9em; }
 </style>
@@ -155,6 +156,19 @@
     <p>
       This page is the same REPL as the command-line tool.
       <a href="https://github.com/sinback/canid-palettes">Source and CLI on GitHub</a>.
+    </p>
+
+    <h2 id="about-coolors">About the <code>coolors</code> command</h2>
+    <p>
+      <code>coolors</code> prints a link to <a href="https://coolors.co" target="_blank" rel="noopener noreferrer">Coolors</a>,
+      a third-party palette website. The link opens a palette containing your colors and their
+      animal equivalents in order (original, simulated, original, simulated, and so on), which you
+      can then compare and refine there. The colors travel only inside the link: this page sends
+      nothing anywhere until you open it.
+    </p>
+    <p>
+      This project is not affiliated with Coolors or its maintainer. The author has found its
+      free features useful for choosing palettes; some of its other features are paid.
     </p>
   </section>
 </main>
