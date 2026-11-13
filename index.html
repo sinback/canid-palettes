@@ -115,7 +115,11 @@
   .notes { margin-top: 2rem; color: var(--page-dim); font-size: .95rem; }
   .notes h2 { color: var(--page-fg); font-size: 1.05rem; margin: 0 0 .5rem; }
   .notes h2:not(:first-child) { margin-top: 1.5rem; }
+  .notes h3 { color: var(--page-fg); font-size: 1rem; margin: 1.25rem 0 .5rem; }
   .notes p { margin: 0 0 .75rem; }
+  .notes ul, .notes ol { margin: 0 0 .75rem; padding-left: 1.25rem; }
+  .notes pre { margin: 0 0 .75rem; padding: .6rem .8rem; overflow-x: auto; border-radius: 6px; background: var(--chip-bg); border: 1px solid var(--chip-border); }
+  .notes pre code { font-size: .85em; }
   code { font-family: var(--mono); font-size: .9em; }
 </style>
 </head>
@@ -142,52 +146,11 @@
   </div>
 
   <section class="notes">
-    <h2>What am I looking at?</h2>
-    <p>
-      Dogs, wolves, coyotes and foxes are dichromats: they have two cone types
-      (about 430&nbsp;nm and 555&nbsp;nm) where humans have three. Each result row shows
-      your color on the left and an approximation of how a canid sees it on the right.
-    </p>
-    <p>
-      The simulation uses Hunt-Pointer-Estevez LMS matrices and collapses the human L and M
-      cones into one canid L response. It is a principled approximation, not a measured
-      transform. Type <code>help</code> to list the commands, or use the mode button above the text to switch models.
-    </p>
-
-    <h2 id="about-modes">The modes</h2>
-    <p>
-      <strong><code>mode canid</code></strong> (default). Canids have two cone types, so this
-      model keeps two color channels, roughly blue and yellow. Reds, oranges and greens shift
-      toward the same yellowish-olive range, while blues stay distinguishable from yellows.
-    </p>
-    <p>
-      <strong><code>mode rat</code></strong> (experimental). This model keeps a single channel:
-      the rat’s green-sensitive cone. With one cone type there is no hue information, only
-      brightness, so every color reduces to one brightness level. (Rats also have a UV-sensitive
-      cone, but a screen cannot display UV, so it is not modeled.)
-    </p>
-    <p>
-      Why green rather than gray? The output is drawn in green only because that is the cone being
-      modeled; it is a way to display one channel, not a hue the rat perceives. Black stays black,
-      white becomes full green (<code>#00ff00</code>), and the brighter a color looks to that cone,
-      the brighter its green. Different colors of similar brightness come out the same.
-    </p>
+    <!-- The prose below is generated from README.md at build time (see scripts/site-content.mjs); edit it there. -->
+    <!-- site:content -->
     <p>
       This page is the same REPL as the command-line tool.
       <a href="https://github.com/sinback/canid-palettes">Source and CLI on GitHub</a>.
-    </p>
-
-    <h2 id="about-coolors">About the <code>coolors</code> command</h2>
-    <p>
-      <code>coolors</code> prints a link to <a href="https://coolors.co" target="_blank" rel="noopener noreferrer">Coolors</a>,
-      a third-party palette website. The link opens a palette containing your colors and their
-      animal equivalents in order (original, simulated, original, simulated, and so on), which you
-      can then compare and refine there. The colors travel only inside the link: this page sends
-      nothing anywhere until you open it.
-    </p>
-    <p>
-      This project is not affiliated with Coolors or its maintainer. The author has found its
-      free features useful for choosing palettes; some of its other features are paid.
     </p>
   </section>
 </main>
