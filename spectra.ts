@@ -12,7 +12,7 @@
  */
 
 import { CIE_1931_2DEG } from "./cie1931";
-import { Mat3, Vec3, LINEAR_RGB_TO_XYZ, invertMat3, mulMat3 } from "./colorimetry";
+import { Mat3, Vec3, LINEAR_RGB_TO_XYZ, XYZ_TO_LINEAR_RGB, invertMat3, mulMat3, mulMat3Vec3 } from "./colorimetry";
 
 /** A value at each wavelength in WAVELENGTHS. */
 export type Spectrum = number[];
@@ -124,6 +124,26 @@ export const DISPLAY_PRIMARIES: [Spectrum, Spectrum, Spectrum] = (() => {
 export function displaySpectrum(linearRgb: Vec3): Spectrum {
   const [r, g, b] = DISPLAY_PRIMARIES;
   return WAVELENGTHS.map((_, i) => linearRgb[0] * r[i] + linearRgb[1] * g[i] + linearRgb[2] * b[i]);
+}
+
+/**
+ * The most vivid color the screen can show that has the same hue, to a human, as
+ * pure light of one wavelength. Returned as linear RGB with its largest channel at 1.
+ *
+ * Pure single-wavelength light is more vivid than any screen color, so we mix in
+ * just enough white to bring it inside what the screen can show. Adding white
+ * changes how vivid a color is but not its hue.
+ *
+ * The wavelength must be on the 5 nm grid.
+ */
+export function hueOfWavelength(nm: number): Vec3 {
+  const row = CIE_1931_2DEG.find((r) => r[0] === nm);
+  if (!row) throw new Error(`No data for ${nm} nm (use a multiple of 5 from 380 to 780)`);
+  const rgb = mulMat3Vec3(XYZ_TO_LINEAR_RGB, [row[1], row[2], row[3]]);
+  const lowest = Math.min(...rgb);
+  const lifted = rgb.map((v) => v - lowest);
+  const highest = Math.max(...lifted);
+  return [lifted[0] / highest, lifted[1] / highest, lifted[2] / highest];
 }
 
 // ── 3. Catch ──────────────────────────────────────────────────────────────────

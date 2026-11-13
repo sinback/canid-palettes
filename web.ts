@@ -4,6 +4,9 @@
  */
 
 import { Line, ReplState, banner, execute, initialState, promptFor } from "./repl";
+import { delinearize, rgbToHex } from "./colorimetry";
+import { hueOfWavelength } from "./spectra";
+import { getCanidWarmStandIn, setCanidWarmStandIn, translateHex } from "./visual-systems";
 
 const term = document.getElementById("terminal") as HTMLElement;
 const log = document.getElementById("log") as HTMLElement;
@@ -32,6 +35,15 @@ function strong(text: string): HTMLElement {
   return el;
 }
 
+function fillPair(el: HTMLElement, original: string, simulated: string): void {
+  el.dataset.original = original;
+  el.dataset.simulated = simulated;
+  el.replaceChildren(
+    swatch(original), " ", strong(original), "  →  ",
+    swatch(simulated), " ", strong(simulated)
+  );
+}
+
 function renderLine(line: Line): HTMLElement {
   const el = document.createElement("div");
   el.className = `line ${line.t}`;
@@ -43,12 +55,8 @@ function renderLine(line: Line): HTMLElement {
       el.textContent = line.text;
       break;
     case "pair":
-      el.dataset.original = line.original;
-      el.dataset.simulated = line.simulated;
-      el.append(
-        swatch(line.original), " ", strong(line.original), "  →  ",
-        swatch(line.simulated), " ", strong(line.simulated)
-      );
+      el.dataset.mode = state.mode;
+      fillPair(el, line.original, line.simulated);
       break;
     case "link": {
       const a = document.createElement("a");
@@ -84,7 +92,41 @@ function echo(prompt: string, text: string): void {
 function updatePrompt(): void {
   promptEl.textContent = promptFor(state).trimEnd();
   term.dataset.mode = state.mode;
+  standIn.hidden = state.mode !== "canid";
 }
+
+// ── Stand-in slider (canid mode) ──────────────────────────────────────────────
+
+// The slider value is R minus G of the stand-in color, in sRGB steps: 0 is the
+// screen's yellow, positive is more orange, negative is greener.
+const standIn = document.getElementById("standin") as HTMLElement;
+const standInSlider = document.getElementById("standin-slider") as HTMLInputElement;
+const standInSwatch = document.getElementById("standin-swatch") as HTMLElement;
+const standInHex = document.getElementById("standin-hex") as HTMLOutputElement;
+
+function applyStandIn(value: number): void {
+  standInSlider.value = String(value);
+  setCanidWarmStandIn(255 + Math.min(0, value), 255 - Math.max(0, value), 0);
+  const hex = rgbToHex(...getCanidWarmStandIn());
+  standInSwatch.style.backgroundColor = hex;
+  standInHex.textContent = hex;
+  // Repaint every canid row already on screen.
+  log.querySelectorAll<HTMLElement>('.line.pair[data-mode="canid"]').forEach((el) => {
+    const { original, simulated } = translateHex(el.dataset.original!, "canid");
+    fillPair(el, original, simulated);
+  });
+}
+
+standInSlider.addEventListener("input", () => applyStandIn(Number(standInSlider.value)));
+
+standIn.querySelectorAll<HTMLButtonElement>("[data-standin]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const which = btn.dataset.standin!;
+    if (which === "screen") return applyStandIn(0);
+    const [r, g] = hueOfWavelength(Number(which)).map(delinearize);
+    applyStandIn(r - g);
+  });
+});
 
 // ── Running a line ────────────────────────────────────────────────────────────
 

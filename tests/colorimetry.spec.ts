@@ -18,6 +18,7 @@ import {
   displayCatchWeights,
   displaySpectrum,
   catchOf,
+  hueOfWavelength,
   pigmentSensitivity,
   spectrumToXyz,
 } from "../spectra";
@@ -25,6 +26,8 @@ import {
   CANID_CONE_PEAKS,
   RAT_CONE_PEAKS,
   canidConeCatches,
+  getCanidWarmStandIn,
+  setCanidWarmStandIn,
   simulateCanid,
   simulateRat,
 } from "../visual-systems";
@@ -141,7 +144,7 @@ test("canid: grays stay exactly gray", () => {
   for (let v = 0; v <= 255; v++) expect(simulateCanid(v, v, v)).toEqual([v, v, v]);
 });
 
-test("canid: output is always a yellow/blue mix (R equals G)", () => {
+test("canid: with the default stand-ins, output is always a yellow/blue mix (R equals G)", () => {
   for (const [r, g, b] of GRID) {
     const [sr, sg] = simulateCanid(r, g, b);
     expect(sr).toBe(sg);
@@ -187,6 +190,81 @@ test("canid: red is dimmer than green, and blue passes through untouched", () =>
   expect(simulateCanid(255, 0, 0)[0]).toBeLessThan(simulateCanid(0, 255, 0)[0]);
   // ...and blue passes through untouched.
   expect(simulateCanid(0, 0, 255)).toEqual([0, 0, 255]);
+});
+
+// ── Canid stand-in colors ─────────────────────────────────────────────────────
+
+test.describe("canid stand-in", () => {
+  // The stand-in is module state, so these tests must not interleave with the others.
+  test.describe.configure({ mode: "serial" });
+  test.afterEach(() => setCanidWarmStandIn());
+
+  const STAND_INS: [number, number, number][] = [[255, 180, 0], [255, 219, 0], [120, 255, 0]];
+
+  test("defaults to the screen's yellow and can be reset", () => {
+    expect(getCanidWarmStandIn()).toEqual([255, 255, 0]);
+    setCanidWarmStandIn(255, 180, 0);
+    expect(getCanidWarmStandIn()).toEqual([255, 180, 0]);
+    setCanidWarmStandIn();
+    expect(getCanidWarmStandIn()).toEqual([255, 255, 0]);
+  });
+
+  test("only the hue matters: a dim stand-in is scaled to full strength", () => {
+    setCanidWarmStandIn(128, 128, 0);
+    expect(getCanidWarmStandIn()).toEqual([255, 255, 0]);
+  });
+
+  test("a cool color is rejected as the warm stand-in", () => {
+    expect(() => setCanidWarmStandIn(0, 0, 255)).toThrow();
+    expect(() => setCanidWarmStandIn(0, 0, 0)).toThrow();
+    expect(getCanidWarmStandIn()).toEqual([255, 255, 0]);
+  });
+
+  test("grays stay gray and cool colors do not move, whatever the stand-in", () => {
+    const cool = GRID.filter(([r, g, b]) => { const [s, l] = canidConeCatches(r, g, b); return s > l; });
+    const before = cool.map(([r, g, b]) => simulateCanid(r, g, b));
+    for (const standIn of STAND_INS) {
+      setCanidWarmStandIn(...standIn);
+      for (let v = 0; v <= 255; v += 5) expect(simulateCanid(v, v, v)).toEqual([v, v, v]);
+      expect(cool.map(([r, g, b]) => simulateCanid(r, g, b))).toEqual(before);
+    }
+  });
+
+  test("the canid's cone catches are preserved, whatever the stand-in", () => {
+    for (const standIn of STAND_INS) {
+      setCanidWarmStandIn(...standIn);
+      let exact = 0;
+      for (const [r, g, b] of GRID) {
+        const out = simulateCanid(r, g, b);
+        const [s0, l0] = canidConeCatches(r, g, b);
+        const [s1, l1] = canidConeCatches(...out);
+        expect(Math.abs(l1 - l0)).toBeLessThan(0.006);
+        // S is preserved too unless the color had to be pulled back onto the screen.
+        if (Math.min(...out) > 0 && Math.max(...out) < 255) {
+          expect(Math.abs(s1 - s0)).toBeLessThan(0.006);
+          exact++;
+        }
+      }
+      expect(exact).toBeGreaterThan(GRID.length / 3);
+    }
+  });
+
+  test("a more orange stand-in gives warm colors more red than green", () => {
+    setCanidWarmStandIn(255, 180, 0);
+    const [r, g] = simulateCanid(232, 184, 64);
+    expect(r).toBeGreaterThan(g);
+    setCanidWarmStandIn(120, 255, 0);
+    const [r2, g2] = simulateCanid(232, 184, 64);
+    expect(g2).toBeGreaterThan(r2);
+  });
+});
+
+test("hueOfWavelength: 575 nm is an orange-yellow, 555 nm a yellow-green, neither has blue", () => {
+  const [r1, g1, b1] = hueOfWavelength(575);
+  expect(r1).toBe(1); expect(g1).toBeLessThan(1); expect(g1).toBeGreaterThan(0.5); expect(b1).toBe(0);
+  const [r2, g2, b2] = hueOfWavelength(555);
+  expect(g2).toBe(1); expect(r2).toBeLessThan(0.5); expect(b2).toBe(0);
+  expect(() => hueOfWavelength(577)).toThrow();
 });
 
 // ── Rat ───────────────────────────────────────────────────────────────────────

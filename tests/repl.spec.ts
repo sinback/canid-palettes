@@ -206,3 +206,37 @@ test("user input is rendered as text, never as HTML", async ({ page }) => {
   await expect(page.locator("#log img")).toHaveCount(0);
   expect(await page.evaluate(() => (window as any).__pwned)).toBeUndefined();
 });
+
+test("the stand-in slider repaints canid rows and feeds the coolors link", async ({ page }) => {
+  await enter(page, "e8b840 aabbcc");
+  const slider = page.locator("#standin-slider");
+  await expect(page.locator("#standin-hex")).toHaveText("#ffff00");
+
+  await slider.fill("60");
+  await expect(page.locator("#standin-hex")).toHaveText("#ffc300");
+  const [[, warm], [, cool]] = await allPairs(page);
+  expect(warm).not.toBe("#c4c43f");
+  expect(parseInt(warm.slice(1, 3), 16)).toBeGreaterThan(parseInt(warm.slice(3, 5), 16));
+  expect(cool).toBe("#b7b7cc"); // cool colors do not use the warm stand-in
+  await expect(pairs(page).first().locator(".swatch").last()).toHaveAttribute("title", warm);
+
+  await enter(page, "coolors");
+  await expect(page.locator("#log .line.link a")).toHaveText(
+    `https://coolors.co/e8b840-${warm.slice(1)}-aabbcc-b7b7cc`
+  );
+
+  await page.getByRole("button", { name: "screen yellow" }).click();
+  await expect(slider).toHaveValue("0");
+  expect((await allPairs(page))[0]).toEqual(["#e8b840", "#c4c43f"]);
+
+  await page.getByRole("button", { name: "hue of 575 nm" }).click();
+  await expect(page.locator("#standin-hex")).toHaveText("#ffdb00");
+});
+
+test("the stand-in slider is hidden in rat mode", async ({ page }) => {
+  await expect(page.locator("#standin")).toBeVisible();
+  await enter(page, "mode rat");
+  await expect(page.locator("#standin")).toBeHidden();
+  await enter(page, "mode canid");
+  await expect(page.locator("#standin")).toBeVisible();
+});

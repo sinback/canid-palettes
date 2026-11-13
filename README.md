@@ -58,10 +58,19 @@ npx ts-node canid.ts --csv palette.csv out/translated.csv
 3. **Cone catches.** Multiply that spectrum by a cone's curve, wavelength by wavelength, and add up.
    The total is how strongly the cone responds. A canid gets two numbers per color.
 4. **Back to a color you can look at.** A canid's color world has two dimensions and ours has three,
-   so the output uses only mixes of the screen's yellow and blue (a family that includes every gray).
-   For each input, the output is the yellow/blue mix that gives a canid's cones the same two catches.
-   To a canid the two swatches match; to you, the output has lost exactly the differences a canid
-   cannot see.
+   so every output is a gray plus some amount of one of two "stand-in" colors: a warm one (by default
+   the screen's yellow) or a cool one (the screen's blue). For each input, the output is the mix that
+   gives a canid's cones the same two catches. To a canid the two swatches match; to you, the output
+   has lost exactly the differences a canid cannot see.
+
+### The stand-in color is a choice
+
+Steps 1 to 3 say how much color a canid sees. They cannot say which human hue to paint it with: the
+cone curves are exactly what says a canid cannot tell the candidate hues apart. So the warm stand-in
+is picked by taste. The web page has a slider for it (greener to more orange), with presets for the
+screen's yellow, the hue of 575 nm light (what people with one dichromat eye report seeing) and the
+hue of 555 nm light (the canid L cone's peak, which looks yellow-green to us). Wherever the slider
+sits, the two swatches in a row still match for a canid. In code, use `setCanidWarmStandIn(r, g, b)`.
 
 `mode rat` uses the same steps with a single cone peaking near 509 nm, shown as a green-tinted
 grayscale. Rats also have an ultraviolet cone (about 359 nm), which is left out because a screen
@@ -71,8 +80,7 @@ emits almost no light it can catch.
 
 - **A hex color does not say which screen it is on.** The model assumes a typical modern screen
   showing sRGB. Swapping in measured spectra from other screens moves results by a hex step or two.
-- **Step 4 is a convention.** The cone catches come from physics; which human colors stand in for
-  them is a choice. Nobody knows what yellow feels like to a dog.
+- **Step 4 is a convention.** See above. Nobody knows what yellow feels like to a dog.
 - **Only cone pigments are modelled.** Rods, the lens, and everything the brain does afterwards
   are not.
 - **Turn off Night Shift, f.lux and similar** for the intended preview: they tint the whole screen,

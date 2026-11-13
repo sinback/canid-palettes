@@ -39,43 +39,93 @@ export function canidConeCatches(r: number, g: number, b: number): [number, numb
   return [dot(CANID_S, rgb), dot(CANID_L, rgb)];
 }
 
+// The stand-in colors: which human colors we use to paint what a canid sees.
+// Linear RGB, largest channel 1. See simulateCanid.
+const SCREEN_YELLOW: Vec3 = [1, 1, 0];
+const SCREEN_BLUE: Vec3 = [0, 0, 1];
+
+let warmStandIn: Vec3 = SCREEN_YELLOW;
+const coolStandIn: Vec3 = SCREEN_BLUE;
+
+/**
+ * Choose the color that stands in for the warm side of canid vision (the "yellow"
+ * a canid sees in reds, oranges, yellows and greens). Takes sRGB [0, 255]; only the
+ * hue matters, so the color is scaled to full strength. Call with no arguments to
+ * go back to the default, the screen's own yellow.
+ *
+ * This is a free choice, not a fact about canids: whichever stand-in is used,
+ * the output still gives a canid's cones the same catches as the input.
+ */
+export function setCanidWarmStandIn(r?: number, g?: number, b?: number): void {
+  if (r === undefined || g === undefined || b === undefined) {
+    warmStandIn = SCREEN_YELLOW;
+    return;
+  }
+  const rgb = toLinear(r, g, b);
+  const highest = Math.max(...rgb);
+  const scaled: Vec3 = [rgb[0] / highest, rgb[1] / highest, rgb[2] / highest];
+  // The warm stand-in must excite the L cone more than the S cone, relative to white.
+  if (!(highest > 0) || dot(CANID_S, scaled) >= dot(CANID_L, scaled)) {
+    throw new Error("The warm stand-in must be a warm color (red, orange, yellow or green)");
+  }
+  warmStandIn = scaled;
+}
+
+/** The current warm stand-in as sRGB [0, 255]. */
+export function getCanidWarmStandIn(): Rgb {
+  return [delinearize(warmStandIn[0]), delinearize(warmStandIn[1]), delinearize(warmStandIn[2])];
+}
+
 /**
  * Simulate canid dichromacy.
  *
  * A canid's color world has two dimensions (S catch and L catch) and ours has
- * three, so we must choose which human colors stand in for canid colors. We use
- * mixes of the screen's yellow (red + green together) and its blue. That family
- * runs through black, every gray and white, and it is the usual choice for
- * showing dichromat vision (Viénot, Brettel & Mollon 1999).
+ * three, so we must choose which human colors stand in for canid colors. Every
+ * output is a gray plus some amount of one of two stand-in colors: a warm one
+ * (by default the screen's yellow, red + green together) for colors that excite
+ * the L cone more than white does, and a cool one (the screen's blue) for colors
+ * that excite the S cone more. This is the usual way of showing dichromat vision
+ * (Brettel, Viénot & Mollon 1997; Viénot, Brettel & Mollon 1999).
  *
- * For each input we find the yellow/blue mix that gives the canid's cones
+ * For each input we find the gray + stand-in mix that gives the canid's cones
  * exactly the same two catches as the input. To a canid the input and the output
  * are the same color; to a human, the output has lost precisely the differences
  * a canid cannot see.
+ *
+ * Which hues to use as stand-ins is a choice. The cone curves cannot settle it:
+ * they are exactly what says a canid cannot tell the candidates apart.
  */
 export function simulateCanid(r: number, g: number, b: number): Rgb {
   const [s, l] = canidConeCatches(r, g, b);
 
-  // Catches produced by one unit of yellow (R = G = 1) and one unit of blue.
-  const yellowS = CANID_S[0] + CANID_S[1], blueS = CANID_S[2];
-  const yellowL = CANID_L[0] + CANID_L[1], blueL = CANID_L[2];
+  // White gives catches of exactly (1, 1), so s < l means "warmer than gray".
+  const standIn = s <= l ? warmStandIn : coolStandIn;
+  const standInS = dot(CANID_S, standIn), standInL = dot(CANID_L, standIn);
 
-  // Solve   yellow * yellowS + blue * blueS = s
-  //         yellow * yellowL + blue * blueL = l
-  const det = yellowS * blueL - blueS * yellowL;
-  let yellow = (s * blueL - blueS * l) / det;
-  let blue = (yellowS * l - s * yellowL) / det;
+  // Solve   gray + amount * standInS = s
+  //         gray + amount * standInL = l
+  let amount = (s - l) / (standInS - standInL);
+  let gray = s - amount * standInS;
 
-  // A few saturated inputs (pure red, cyan) need slightly less than no blue, or
-  // slightly more than full blue, which a screen cannot show. Keep the L catch,
-  // which carries most of the brightness, and let the S catch be a little off.
-  if (blue < 0 || blue > 1) {
-    blue = clamp01(blue);
-    yellow = (l - blue * blueL) / yellowL;
+  // A few saturated inputs fall outside what the screen can show. In both cases
+  // keep the L catch, which carries most of the brightness, and let the S catch
+  // be a little off.
+  if (gray < 0) {
+    // More vivid than the stand-in itself: use the pure stand-in.
+    gray = 0;
+    amount = l / standInL;
+  }
+  if (gray + amount > 1) {
+    // Brighter than the stand-in can get: trade some of it for white.
+    amount = (1 - l) / (1 - standInL);
+    gray = 1 - amount;
   }
 
-  const y = delinearize(yellow);
-  return [y, y, delinearize(blue)];
+  return [
+    delinearize(gray + amount * standIn[0]),
+    delinearize(gray + amount * standIn[1]),
+    delinearize(gray + amount * standIn[2]),
+  ];
 }
 
 // ── Rat (monochromat, experimental) ───────────────────────────────────────────

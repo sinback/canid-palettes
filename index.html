@@ -111,6 +111,35 @@
   }
   .examples button:hover, .examples button:focus-visible { border-color: var(--page-link); }
 
+  /* ── Stand-in slider ── */
+  .standin {
+    margin-top: 1rem;
+    padding: .75rem .9rem;
+    background: var(--chip-bg);
+    border: 1px solid var(--chip-border);
+    border-radius: 10px;
+    font-size: .9rem;
+  }
+  .standin[hidden] { display: none; }
+  .standin label { display: block; font-weight: 600; margin-bottom: .4rem; }
+  .standin .row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; }
+  .standin input[type=range] { flex: 1 1 12rem; min-width: 0; accent-color: var(--page-link); }
+  .standin output { font: 13px var(--mono); }
+  .standin .swatch { width: 2.4em; height: 1.3em; border-color: var(--chip-border); }
+  .standin .ends { display: flex; justify-content: space-between; color: var(--page-dim); font-size: .8rem; }
+  .standin .presets { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+  .standin .presets button {
+    font: 13px var(--mono);
+    color: var(--page-fg);
+    background: transparent;
+    border: 1px solid var(--chip-border);
+    border-radius: 999px;
+    padding: .25rem .7rem;
+    cursor: pointer;
+  }
+  .standin .presets button:hover, .standin .presets button:focus-visible { border-color: var(--page-link); }
+  .standin p { margin: .6rem 0 0; color: var(--page-dim); font-size: .85rem; }
+
   /* ── Notes ── */
   .notes { margin-top: 2rem; color: var(--page-dim); font-size: .95rem; }
   .notes h2 { color: var(--page-fg); font-size: 1.05rem; margin: 0 0 .5rem; }
@@ -141,6 +170,26 @@
     <button type="button" data-run="help">help</button>
   </div>
 
+  <section class="standin" id="standin" aria-label="Stand-in color for canid mode">
+    <label for="standin-slider">Stand-in for the canid’s “yellow”</label>
+    <div class="row">
+      <input id="standin-slider" type="range" min="-140" max="170" step="1" value="0">
+      <span class="swatch" id="standin-swatch"></span>
+      <output id="standin-hex" for="standin-slider">#ffff00</output>
+    </div>
+    <div class="ends" aria-hidden="true"><span>greener</span><span>more orange</span></div>
+    <div class="presets">
+      <button type="button" data-standin="screen">screen yellow</button>
+      <button type="button" data-standin="575">hue of 575 nm</button>
+      <button type="button" data-standin="555">hue of 555 nm</button>
+    </div>
+    <p>
+      The cone math says how much color a canid sees, not which of our hues to paint it with.
+      This slider picks that hue, and it is purely a choice: wherever it sits, a canid would
+      still see both swatches in a row as the same color.
+    </p>
+  </section>
+
   <section class="notes">
     <h2>What am I looking at?</h2>
     <p>
@@ -150,7 +199,7 @@
     </p>
     <p>
       Each hex color is turned into the light a screen emits, and that light into how strongly
-      each canid cone responds. The right-hand swatch is the mix of yellow and blue that
+      each canid cone responds. The right-hand swatch is the yellowish or bluish color that
       triggers a canid's cones identically: to a canid the two swatches match, and what you see
       missing is what a canid cannot tell apart. <code>mode rat</code> is an experimental
       one-cone model, shown in green.
