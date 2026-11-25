@@ -3,3 +3,4 @@ _site/
 test-results/
 playwright-report/
 dist/
+*.png

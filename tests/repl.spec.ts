@@ -209,11 +209,11 @@ test("user input is rendered as text, never as HTML", async ({ page }) => {
 
 test("the stand-in slider repaints canid rows and feeds the coolors link", async ({ page }) => {
   await enter(page, "e8b840 aabbcc");
-  const slider = page.locator("#standin-slider");
-  await expect(page.locator("#standin-hex")).toHaveText("#ffff00");
+  const slider = page.locator("#warm-slider");
+  await expect(page.locator("#warm-hex")).toHaveText("#ffff00");
 
   await slider.fill("60");
-  await expect(page.locator("#standin-hex")).toHaveText("#ffc300");
+  await expect(page.locator("#warm-hex")).toHaveText("#ffc300");
   const [[, warm], [, cool]] = await allPairs(page);
   expect(warm).not.toBe("#c4c43f");
   expect(parseInt(warm.slice(1, 3), 16)).toBeGreaterThan(parseInt(warm.slice(3, 5), 16));
@@ -230,7 +230,7 @@ test("the stand-in slider repaints canid rows and feeds the coolors link", async
   expect((await allPairs(page))[0]).toEqual(["#e8b840", "#c4c43f"]);
 
   await page.getByRole("button", { name: "hue of 575 nm" }).click();
-  await expect(page.locator("#standin-hex")).toHaveText("#ffdb00");
+  await expect(page.locator("#warm-hex")).toHaveText("#ffdb00");
 });
 
 test("the stand-in slider is hidden in rat mode", async ({ page }) => {
@@ -239,4 +239,26 @@ test("the stand-in slider is hidden in rat mode", async ({ page }) => {
   await expect(page.locator("#standin")).toBeHidden();
   await enter(page, "mode canid");
   await expect(page.locator("#standin")).toBeVisible();
+});
+
+test("the blue stand-in slider repaints cool rows only", async ({ page }) => {
+  await enter(page, "e8b840 aabbcc");
+  await expect(page.locator("#cool-hex")).toHaveText("#0000ff");
+  await page.getByRole("button", { name: "hue of 475 nm" }).click();
+  await expect(page.locator("#cool-hex")).toHaveText("#008dff");
+  const [[, warm], [, cool]] = await allPairs(page);
+  expect(warm).toBe("#c4c43f");
+  expect(cool).not.toBe("#b7b7cc");
+  await page.getByRole("button", { name: "screen blue" }).click();
+  expect((await allPairs(page))[1]).toEqual(["#aabbcc", "#b7b7cc"]);
+});
+
+test("stand-in settings survive a reload", async ({ page }) => {
+  await page.locator("#warm-slider").fill("55");
+  await page.locator("#cool-slider").fill("-100");
+  await page.reload();
+  await expect(page.locator("#warm-hex")).toHaveText("#ffc800");
+  await expect(page.locator("#cool-slider")).toHaveValue("-100");
+  await enter(page, "e8b840");
+  expect((await lastPair(page))[1]).not.toBe("#c4c43f");
 });

@@ -6,50 +6,8 @@
 <title>canid-palettes</title>
 <meta name="description" content="Translate hex colors to what a dog, wolf, coyote or fox would see: a REPL for canid (dichromatic) color vision.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%90%BA%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="site.css">
 <style>
-  :root {
-    --page-bg: #f4f1ea;
-    --page-fg: #2b2a26;
-    --page-dim: #6b685f;
-    --page-link: #7a4b00;
-    --chip-bg: #fffdf8;
-    --chip-border: #cfc9ba;
-    --term-bg: #1c1b17;
-    --term-fg: #e8e4d8;
-    --term-dim: #8f8b7e;
-    --term-accent: #e8b840;
-    --term-border: #3a382f;
-    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --page-bg: #12110e;
-      --page-fg: #e8e4d8;
-      --page-dim: #9a968a;
-      --page-link: #e8b840;
-      --chip-bg: #1c1b17;
-      --chip-border: #3a382f;
-      --term-bg: #0b0b09;
-    }
-  }
-
-  * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
-  body {
-    margin: 0;
-    background: var(--page-bg);
-    color: var(--page-fg);
-    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  }
-  main {
-    max-width: 52rem;
-    margin: 0 auto;
-    padding: 1.5rem 16px 3rem;
-  }
-  h1 { margin: 0 0 .25rem; font-size: 1.6rem; }
-  .tagline { margin: 0 0 1.25rem; color: var(--page-dim); }
-  a { color: var(--page-link); }
-
   /* ── Terminal ── */
   .terminal {
     background: var(--term-bg);
@@ -111,41 +69,6 @@
   }
   .examples button:hover, .examples button:focus-visible { border-color: var(--page-link); }
 
-  /* ── Stand-in slider ── */
-  .standin {
-    margin-top: 1rem;
-    padding: .75rem .9rem;
-    background: var(--chip-bg);
-    border: 1px solid var(--chip-border);
-    border-radius: 10px;
-    font-size: .9rem;
-  }
-  .standin[hidden] { display: none; }
-  .standin label { display: block; font-weight: 600; margin-bottom: .4rem; }
-  .standin .row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; }
-  .standin input[type=range] { flex: 1 1 12rem; min-width: 0; accent-color: var(--page-link); }
-  .standin output { font: 13px var(--mono); }
-  .standin .swatch { width: 2.4em; height: 1.3em; border-color: var(--chip-border); }
-  .standin .ends { display: flex; justify-content: space-between; color: var(--page-dim); font-size: .8rem; }
-  .standin .presets { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
-  .standin .presets button {
-    font: 13px var(--mono);
-    color: var(--page-fg);
-    background: transparent;
-    border: 1px solid var(--chip-border);
-    border-radius: 999px;
-    padding: .25rem .7rem;
-    cursor: pointer;
-  }
-  .standin .presets button:hover, .standin .presets button:focus-visible { border-color: var(--page-link); }
-  .standin p { margin: .6rem 0 0; color: var(--page-dim); font-size: .85rem; }
-
-  /* ── Notes ── */
-  .notes { margin-top: 2rem; color: var(--page-dim); font-size: .95rem; }
-  .notes h2 { color: var(--page-fg); font-size: 1.05rem; margin: 0 0 .5rem; }
-  .notes p { margin: 0 0 .75rem; }
-  .notes .fine { font-size: .85rem; }
-  code { font-family: var(--mono); font-size: .9em; }
 </style>
 </head>
 <body>
@@ -170,25 +93,7 @@
     <button type="button" data-run="help">help</button>
   </div>
 
-  <section class="standin" id="standin" aria-label="Stand-in color for canid mode">
-    <label for="standin-slider">Stand-in for the canid’s “yellow”</label>
-    <div class="row">
-      <input id="standin-slider" type="range" min="-140" max="170" step="1" value="0">
-      <span class="swatch" id="standin-swatch"></span>
-      <output id="standin-hex" for="standin-slider">#ffff00</output>
-    </div>
-    <div class="ends" aria-hidden="true"><span>greener</span><span>more orange</span></div>
-    <div class="presets">
-      <button type="button" data-standin="screen">screen yellow</button>
-      <button type="button" data-standin="575">hue of 575 nm</button>
-      <button type="button" data-standin="555">hue of 555 nm</button>
-    </div>
-    <p>
-      The cone math says how much color a canid sees, not which of our hues to paint it with.
-      This slider picks that hue, and it is purely a choice: wherever it sits, a canid would
-      still see both swatches in a row as the same color.
-    </p>
-  </section>
+  <section class="standin" id="standin" aria-label="Canid stand-in colors"></section>
 
   <section class="notes">
     <h2>What am I looking at?</h2>
@@ -200,13 +105,16 @@
     <p>
       Each hex color is turned into the light a screen emits, and that light into how strongly
       each canid cone responds. The right-hand swatch is the yellowish or bluish color that
-      triggers a canid's cones identically: to a canid the two swatches match, and what you see
+      triggers a canid's cones identically (the sliders pick which yellow and which blue): to a canid the two swatches match, and what you see
       missing is what a canid cannot tell apart. <code>mode rat</code> is an experimental
       one-cone model, shown in green.
     </p>
     <p class="fine">
       A hex color does not say which screen it is on, so a typical one is assumed. For the
       intended preview, turn off Night Shift, f.lux or similar.
+    </p>
+    <p>
+      Want to see a whole picture? <a href="scenes.html">Preview pixel-art scenes</a> with the same sliders.
     </p>
     <p>
       This page is the same REPL as the command-line tool.

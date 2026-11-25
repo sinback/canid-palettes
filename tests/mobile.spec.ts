@@ -28,3 +28,12 @@ test("example chips work by tap", async ({ page }) => {
   await page.getByRole("button", { name: "a palette" }).tap();
   expect(await allPairs(page)).toHaveLength(4);
 });
+
+test("the scene preview fits at phone width", async ({ page }) => {
+  await page.goto("/scenes.html");
+  await page.locator("body[data-ready]").waitFor();
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth
+  );
+  expect(overflow).toBeLessThanOrEqual(0);
+});

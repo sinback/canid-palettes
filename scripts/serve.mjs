@@ -5,7 +5,13 @@ import { extname, join, normalize } from "node:path";
 
 const root = new URL("../_site/", import.meta.url).pathname;
 const port = Number(process.env.PORT ?? 4173);
-const types = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".map": "application/json" };
+const types = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript",
+  ".css": "text/css",
+  ".png": "image/png",
+  ".map": "application/json",
+};
 
 createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", "http://localhost");

@@ -26,7 +26,9 @@ import {
   CANID_CONE_PEAKS,
   RAT_CONE_PEAKS,
   canidConeCatches,
+  getCanidCoolStandIn,
   getCanidWarmStandIn,
+  setCanidCoolStandIn,
   setCanidWarmStandIn,
   simulateCanid,
   simulateRat,
@@ -197,7 +199,10 @@ test("canid: red is dimmer than green, and blue passes through untouched", () =>
 test.describe("canid stand-in", () => {
   // The stand-in is module state, so these tests must not interleave with the others.
   test.describe.configure({ mode: "serial" });
-  test.afterEach(() => setCanidWarmStandIn());
+  test.afterEach(() => {
+    setCanidWarmStandIn();
+    setCanidCoolStandIn();
+  });
 
   const STAND_INS: [number, number, number][] = [[255, 180, 0], [255, 219, 0], [120, 255, 0]];
 
@@ -247,6 +252,34 @@ test.describe("canid stand-in", () => {
       }
       expect(exact).toBeGreaterThan(GRID.length / 3);
     }
+  });
+
+  test("the cool stand-in defaults to the screen's blue and rejects warm colors", () => {
+    expect(getCanidCoolStandIn()).toEqual([0, 0, 255]);
+    setCanidCoolStandIn(0, 141, 255);
+    expect(getCanidCoolStandIn()).toEqual([0, 141, 255]);
+    expect(() => setCanidCoolStandIn(255, 200, 0)).toThrow();
+    expect(() => setCanidCoolStandIn(0, 0, 0)).toThrow();
+    expect(getCanidCoolStandIn()).toEqual([0, 141, 255]);
+  });
+
+  test("the cool stand-in moves cool colors only, and keeps the catches", () => {
+    const warm = GRID.filter(([r, g, b]) => { const [s, l] = canidConeCatches(r, g, b); return s <= l; });
+    const before = warm.map(([r, g, b]) => simulateCanid(r, g, b));
+    for (const standIn of [[0, 141, 255], [0, 255, 255], [135, 0, 255]] as [number, number, number][]) {
+      setCanidCoolStandIn(...standIn);
+      expect(warm.map(([r, g, b]) => simulateCanid(r, g, b))).toEqual(before);
+      for (let v = 0; v <= 255; v += 5) expect(simulateCanid(v, v, v)).toEqual([v, v, v]);
+      for (const [r, g, b] of GRID) {
+        const [, l0] = canidConeCatches(r, g, b);
+        const [, l1] = canidConeCatches(...simulateCanid(r, g, b));
+        expect(Math.abs(l1 - l0)).toBeLessThan(0.006);
+      }
+    }
+    setCanidCoolStandIn(0, 141, 255);
+    const [r, g, b] = simulateCanid(170, 187, 204);
+    expect(g).toBeGreaterThan(r);
+    expect(b).toBeGreaterThan(g);
   });
 
   test("a more orange stand-in gives warm colors more red than green", () => {

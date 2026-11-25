@@ -45,7 +45,16 @@ const SCREEN_YELLOW: Vec3 = [1, 1, 0];
 const SCREEN_BLUE: Vec3 = [0, 0, 1];
 
 let warmStandIn: Vec3 = SCREEN_YELLOW;
-const coolStandIn: Vec3 = SCREEN_BLUE;
+let coolStandIn: Vec3 = SCREEN_BLUE;
+
+/** sRGB [0, 255] -> linear RGB scaled so its largest channel is 1 (only the hue is kept). */
+function fullStrength(r: number, g: number, b: number): Vec3 | null {
+  const rgb = toLinear(r, g, b);
+  const highest = Math.max(...rgb);
+  return highest > 0 ? [rgb[0] / highest, rgb[1] / highest, rgb[2] / highest] : null;
+}
+
+const toSrgb = (v: Vec3): Rgb => [delinearize(v[0]), delinearize(v[1]), delinearize(v[2])];
 
 /**
  * Choose the color that stands in for the warm side of canid vision (the "yellow"
@@ -61,19 +70,40 @@ export function setCanidWarmStandIn(r?: number, g?: number, b?: number): void {
     warmStandIn = SCREEN_YELLOW;
     return;
   }
-  const rgb = toLinear(r, g, b);
-  const highest = Math.max(...rgb);
-  const scaled: Vec3 = [rgb[0] / highest, rgb[1] / highest, rgb[2] / highest];
+  const scaled = fullStrength(r, g, b);
   // The warm stand-in must excite the L cone more than the S cone, relative to white.
-  if (!(highest > 0) || dot(CANID_S, scaled) >= dot(CANID_L, scaled)) {
+  if (!scaled || dot(CANID_S, scaled) >= dot(CANID_L, scaled)) {
     throw new Error("The warm stand-in must be a warm color (red, orange, yellow or green)");
   }
   warmStandIn = scaled;
 }
 
+/**
+ * Choose the color that stands in for the cool side of canid vision (the "blue" a
+ * canid sees in blues, violets and cyans). Works like setCanidWarmStandIn; the
+ * default is the screen's own blue.
+ */
+export function setCanidCoolStandIn(r?: number, g?: number, b?: number): void {
+  if (r === undefined || g === undefined || b === undefined) {
+    coolStandIn = SCREEN_BLUE;
+    return;
+  }
+  const scaled = fullStrength(r, g, b);
+  // The cool stand-in must excite the S cone more than the L cone, relative to white.
+  if (!scaled || dot(CANID_S, scaled) <= dot(CANID_L, scaled)) {
+    throw new Error("The cool stand-in must be a cool color (blue, violet or cyan)");
+  }
+  coolStandIn = scaled;
+}
+
 /** The current warm stand-in as sRGB [0, 255]. */
 export function getCanidWarmStandIn(): Rgb {
-  return [delinearize(warmStandIn[0]), delinearize(warmStandIn[1]), delinearize(warmStandIn[2])];
+  return toSrgb(warmStandIn);
+}
+
+/** The current cool stand-in as sRGB [0, 255]. */
+export function getCanidCoolStandIn(): Rgb {
+  return toSrgb(coolStandIn);
 }
 
 /**
@@ -83,8 +113,8 @@ export function getCanidWarmStandIn(): Rgb {
  * three, so we must choose which human colors stand in for canid colors. Every
  * output is a gray plus some amount of one of two stand-in colors: a warm one
  * (by default the screen's yellow, red + green together) for colors that excite
- * the L cone more than white does, and a cool one (the screen's blue) for colors
- * that excite the S cone more. This is the usual way of showing dichromat vision
+ * the L cone more than white does, and a cool one (by default the screen's blue)
+ * for colors that excite the S cone more. This is the usual way of showing dichromat vision
  * (Brettel, Viénot & Mollon 1997; Viénot, Brettel & Mollon 1999).
  *
  * For each input we find the gray + stand-in mix that gives the canid's cones

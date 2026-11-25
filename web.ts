@@ -4,9 +4,8 @@
  */
 
 import { Line, ReplState, banner, execute, initialState, promptFor } from "./repl";
-import { delinearize, rgbToHex } from "./colorimetry";
-import { hueOfWavelength } from "./spectra";
-import { getCanidWarmStandIn, setCanidWarmStandIn, translateHex } from "./visual-systems";
+import { mountStandInControls } from "./standin-controls";
+import { translateHex } from "./visual-systems";
 
 const term = document.getElementById("terminal") as HTMLElement;
 const log = document.getElementById("log") as HTMLElement;
@@ -95,38 +94,19 @@ function updatePrompt(): void {
   standIn.hidden = state.mode !== "canid";
 }
 
-// ── Stand-in slider (canid mode) ──────────────────────────────────────────────
+// ── Stand-in sliders (canid mode) ─────────────────────────────────────────────
 
-// The slider value is R minus G of the stand-in color, in sRGB steps: 0 is the
-// screen's yellow, positive is more orange, negative is greener.
 const standIn = document.getElementById("standin") as HTMLElement;
-const standInSlider = document.getElementById("standin-slider") as HTMLInputElement;
-const standInSwatch = document.getElementById("standin-swatch") as HTMLElement;
-const standInHex = document.getElementById("standin-hex") as HTMLOutputElement;
 
-function applyStandIn(value: number): void {
-  standInSlider.value = String(value);
-  setCanidWarmStandIn(255 + Math.min(0, value), 255 - Math.max(0, value), 0);
-  const hex = rgbToHex(...getCanidWarmStandIn());
-  standInSwatch.style.backgroundColor = hex;
-  standInHex.textContent = hex;
-  // Repaint every canid row already on screen.
+/** Repaint every canid row already on screen with the current stand-ins. */
+function repaintCanidRows(): void {
   log.querySelectorAll<HTMLElement>('.line.pair[data-mode="canid"]').forEach((el) => {
     const { original, simulated } = translateHex(el.dataset.original!, "canid");
     fillPair(el, original, simulated);
   });
 }
 
-standInSlider.addEventListener("input", () => applyStandIn(Number(standInSlider.value)));
-
-standIn.querySelectorAll<HTMLButtonElement>("[data-standin]").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const which = btn.dataset.standin!;
-    if (which === "screen") return applyStandIn(0);
-    const [r, g] = hueOfWavelength(Number(which)).map(delinearize);
-    applyStandIn(r - g);
-  });
-});
+mountStandInControls(standIn, repaintCanidRows);
 
 // ── Running a line ────────────────────────────────────────────────────────────
 

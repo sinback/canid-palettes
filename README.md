@@ -20,6 +20,13 @@ npm run serve
 
 This builds the page into `_site/` and serves it at http://localhost:4173.
 
+### Previewing whole scenes
+
+http://localhost:4173/scenes.html shows pixel-art images next to their canid versions, with the same
+stand-in sliders between them. It reads `images/glade1.png` and `images/glade2.png`; put your PNGs
+there (the `images/` folder and all PNGs are git-ignored) and run `npm run serve` again to pick up
+changes. On the hosted demo the images are absent, so that page shows a note in their place.
+
 ## Usage
 
 **Interactive REPL** (no args):
@@ -63,14 +70,21 @@ npx ts-node canid.ts --csv palette.csv out/translated.csv
    gives a canid's cones the same two catches. To a canid the two swatches match; to you, the output
    has lost exactly the differences a canid cannot see.
 
-### The stand-in color is a choice
+### The stand-in colors are a choice
 
-Steps 1 to 3 say how much color a canid sees. They cannot say which human hue to paint it with: the
-cone curves are exactly what says a canid cannot tell the candidate hues apart. So the warm stand-in
-is picked by taste. The web page has a slider for it (greener to more orange), with presets for the
-screen's yellow, the hue of 575 nm light (what people with one dichromat eye report seeing) and the
-hue of 555 nm light (the canid L cone's peak, which looks yellow-green to us). Wherever the slider
-sits, the two swatches in a row still match for a canid. In code, use `setCanidWarmStandIn(r, g, b)`.
+Steps 1 to 3 say how much color a canid sees. They cannot say which human hues to paint it with: the
+cone curves are exactly what says a canid cannot tell the candidate hues apart. So both stand-ins are
+picked by taste, with two sliders on the web pages:
+
+- **"Yellow"** (greener to more orange), with presets for the screen's yellow, the hue of 575 nm light
+  (what people with one dichromat eye report seeing) and the hue of 555 nm light (the canid L cone's
+  peak, which looks yellow-green to us).
+- **"Blue"** (more cyan to more violet), with presets for the screen's blue, the hue of 475 nm light
+  (the same reports) and the hue of 430 nm light (near the canid S cone's peak).
+
+Wherever the sliders sit, the original and simulated colors still match for a canid. The setting is
+remembered in your browser and shared between the pages. The CLI always uses the screen's yellow and
+blue. In code, use `setCanidWarmStandIn(r, g, b)` and `setCanidCoolStandIn(r, g, b)`.
 
 `mode rat` uses the same steps with a single cone peaking near 509 nm, shown as a green-tinted
 grayscale. Rats also have an ultraviolet cone (about 359 nm), which is left out because a screen
@@ -96,8 +110,10 @@ emits almost no light it can catch.
 | `visual-systems.ts` | Vision models (`canid`, `rat`) and `translateHex` |
 | `repl.ts` | REPL interpreter shared by the CLI and the web page; returns structured output |
 | `canid.ts` | CLI front-end (arguments, CSV, readline, ANSI rendering) |
-| `web.ts`, `index.html` | Browser front-end; `npm run build:web` bundles them into `_site/` |
-| `tests/` | Playwright tests: the math (`colorimetry.spec.ts`), the REPL, and CLI/web parity |
+| `web.ts`, `index.html` | Browser REPL page |
+| `scenes.ts`, `scenes.html` | Scene preview page (images from `images/`) |
+| `standin-controls.ts`, `site.css` | Stand-in sliders and styles shared by both pages; `npm run build:web` bundles everything into `_site/` |
+| `tests/` | Playwright tests: the math (`colorimetry.spec.ts`), the REPL, the scene page, and CLI/web parity |
 
 ## Tests
 

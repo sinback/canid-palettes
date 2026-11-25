@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Canid scene preview</title>
+<meta name="description" content="Preview whole pixel-art scenes as a canid (dog, wolf, coyote, fox) would see them.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%90%BA%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="site.css">
+<style>
+  main { max-width: 72rem; }
+
+  .scene { margin: 1.25rem 0 0; }
+  .scene figcaption { font-weight: 600; margin-bottom: .5rem; }
+  .scene figcaption code { font-weight: 400; color: var(--page-dim); }
+
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .pane { min-width: 0; }
+  .pane-label { font-size: .85rem; color: var(--page-dim); margin-bottom: .25rem; }
+  .pane canvas {
+    display: block;
+    max-width: 100%;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    border-radius: 4px;
+    background: var(--term-bg);
+  }
+
+  .palette {
+    list-style: none;
+    margin: .6rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+  }
+  .palette .count { font-size: .8rem; color: var(--page-dim); margin-right: .4rem; }
+  .palette li.entry { display: flex; flex-direction: column; border: 1px solid var(--chip-border); border-radius: 3px; overflow: hidden; }
+  .palette li.entry span { display: block; width: 22px; height: 12px; }
+
+  .missing {
+    padding: 1rem;
+    border: 1px dashed var(--chip-border);
+    border-radius: 8px;
+    color: var(--page-dim);
+    font-size: .9rem;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>🐺 Scene preview</h1>
+  <p class="tagline">
+    Whole pixel-art scenes, as a canid would see them.
+    <a href="./">Back to the color REPL</a>.
+  </p>
+
+  <figure class="scene" id="scene-1" data-src="images/glade1.png">
+    <figcaption>Glade 1 <code>images/glade1.png</code></figcaption>
+  </figure>
+
+  <section class="standin" id="standin" aria-label="Canid stand-in colors"></section>
+
+  <figure class="scene" id="scene-2" data-src="images/glade2.png">
+    <figcaption>Glade 2 <code>images/glade2.png</code></figcaption>
+  </figure>
+
+  <section class="notes">
+    <h2>What am I looking at?</h2>
+    <p>
+      Each scene is shown as it is on the left and as a canid would see it on the right.
+      Pixel art uses a small palette, so every distinct color is translated once and the
+      image is repainted from that table; the strip under each scene shows the table
+      (original on top, simulated below), most-used colors first.
+    </p>
+    <p>
+      The images are read from <code>images/</code> in the project, which is not checked in.
+      To preview your own scenes, put PNGs there with these names and run
+      <code>npm run serve</code> again.
+    </p>
+    <p class="fine">
+      For the intended preview, turn off Night Shift, f.lux or similar.
+    </p>
+  </section>
+</main>
+<script src="scenes.js"></script>
+</body>
+</html>
